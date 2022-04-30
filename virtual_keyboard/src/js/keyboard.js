@@ -7,6 +7,8 @@ export class Keyboard {
   #keyboardEl;
   #inputGroupEl;
   #inputEl;
+  #keyPress = false;
+  #mouseDown = false;
 
   constructor() {
     this.#assignElement();
@@ -24,12 +26,36 @@ export class Keyboard {
   #addEvent() {
     this.#swichEl.addEventListener("change", this.#onChangeTheme); // 테마 변경
     this.#fontSelectEl.addEventListener("change", this.#onChangeFont); // 폰트 변경
-
-    // 키보드를 눌렀을 때
     document.addEventListener("keydown", this.#onKeyDown.bind(this));
-    // 키보드에서 땠을 떄
     document.addEventListener("keyup", this.#onKeyUp.bind(this));
     this.#inputEl.addEventListener("input", this.#onInput);
+    this.#keyboardEl.addEventListener(
+      "mousedown",
+      this.#onMouseDown.bind(this)
+    );
+    document.addEventListener("mouseup", this.#onMouseUp.bind(this));
+  }
+  #onMouseDown(event) {
+    if (this.#keyPress) return;
+    this.#mouseDown = true;
+    event.target.closest("div.key")?.classList.add("active");
+  }
+  #onMouseUp(event) {
+    if (this.#keyPress) return;
+    this.#mouseDown = false;
+    const keyEl = event.target.closest("div.key");
+    const isActive = !!keyEl?.classList.contains("active");
+    const val = keyEl?.dataset.val;
+    if (isActive && !!val && val !== "Space" && val !== "Backspace") {
+      this.#inputEl.value += val;
+    }
+    if (isActive && val === "Space") {
+      this.#inputEl.value += " ";
+    }
+    if (isActive && val === "Backspace") {
+      this.#inputEl.value = this.#inputEl.value.slice(0, -1);
+    }
+    this.#keyboardEl.querySelector(".active")?.classList.remove("active");
   }
 
   #onChangeTheme(event) {
@@ -44,12 +70,16 @@ export class Keyboard {
   }
 
   #onKeyUp(event) {
+    if (this.#mouseDown) return;
+    this.#keyPress = false;
     this.#keyboardEl
       .querySelector(`[data-code=${event.code}]`)
       ?.classList.remove("active");
   }
 
   #onKeyDown(event) {
+    if (this.#mouseDown) return;
+    this.#keyPress = true;
     this.#inputGroupEl.classList.toggle(
       "error",
       /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(event.key)
